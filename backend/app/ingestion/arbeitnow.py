@@ -1,4 +1,5 @@
 import logging
+import html
 from datetime import datetime
 from typing import Dict, Any, Optional
 from app.config import settings
@@ -34,7 +35,8 @@ class ArbeitnowSource(JobSource):
             raw_location = raw_item.get("location") or ""
             location = "Remote" if is_remote else (raw_location if raw_location else "Remote")
             
-            description = raw_item.get("description") or "No description provided."
+            raw_desc = raw_item.get("description") or "No description provided."
+            description = html.unescape(raw_desc).strip()
             
             tags = raw_item.get("tags", [])
             category = tags[0] if tags and isinstance(tags, list) else "General Tech"

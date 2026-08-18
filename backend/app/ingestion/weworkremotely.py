@@ -1,4 +1,5 @@
 import logging
+import html
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import List, Dict, Any, Optional
@@ -79,7 +80,8 @@ class WeworkremotelySource(JobSource):
                 title = parts[1].strip()
 
             location = raw_item.get("region") or "Remote"
-            description = raw_item.get("description") or "No description provided."
+            raw_desc = raw_item.get("description") or "No description provided."
+            description = html.unescape(raw_desc).strip()
             category = raw_item.get("category") or "Full-Stack Programming"
 
             published_at = datetime.utcnow()

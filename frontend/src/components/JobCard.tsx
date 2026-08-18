@@ -17,19 +17,21 @@ export const JobCard: React.FC<JobCardProps> = ({
 }) => {
   const cleanExcerpt = (rawStr: string) => {
     if (!rawStr) return 'No description available.';
-    // Strip HTML tags cleanly
-    let text = rawStr.replace(/<[^>]*>?/gm, ' ');
-    // Decode HTML entities
-    text = text
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'");
-    // Normalize spaces
-    text = text.replace(/\s+/g, ' ').trim();
-    return text.length > 130 ? text.slice(0, 130) + '...' : text;
+    try {
+      // 1. Unescape & strip HTML tags via browser DOMParser
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(rawStr, 'text/html');
+      let text = doc.body.textContent || doc.body.innerText || '';
+      
+      // 2. Extra safety regex strip for leftover angle brackets
+      text = text.replace(/<[^>]*>?/gm, ' ');
+      text = text.replace(/\s+/g, ' ').trim();
+      
+      return text.length > 130 ? text.slice(0, 130) + '...' : text;
+    } catch {
+      let text = rawStr.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+      return text.length > 130 ? text.slice(0, 130) + '...' : text;
+    }
   };
 
   const formatDate = (dateStr?: string | null) => {
