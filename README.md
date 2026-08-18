@@ -1,4 +1,4 @@
-# Acdyon Ingest — Multi-Source Job Ingestion & Market Analytics Platform
+# Acdyon Ingest — Resilient Multi-Source Job Ingestion & Market Analytics Platform
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18.2-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)
@@ -8,18 +8,42 @@
 [![Pytest](https://img.shields.io/badge/Pytest-8.0-0A9EDC?style=flat-square&logo=pytest)](https://docs.pytest.org/)
 
 **Author**: Gutha Yaswanth (`guthayaswanth0123`)  
-**Project Target**: Acdyon Technologies Frontend & Engineering Challenge — **Part 1 (Scraper / Job Listing Ingestion Project)**  
-**Live Frontend**: [https://acdyon-job-ingestion-tool.vercel.app](https://acdyon-job-ingestion-tool.vercel.app)  
-**Live Backend API**: [https://acdyon-job-ingestion-tool.onrender.com](https://acdyon-job-ingestion-tool.onrender.com)  
+**Project**: Acdyon Technologies Engineering Challenge — **Part 1 (Scraper / Job Listing Ingestion Project)**  
+**Live Deployed Frontend (Vercel)**: [https://acdyon-job-ingestion-tool.vercel.app](https://acdyon-job-ingestion-tool.vercel.app)  
+**Live Deployed Backend API (Render)**: [https://acdyon-job-ingestion-tool.onrender.com](https://acdyon-job-ingestion-tool.onrender.com)  
 **GitHub Repository**: [https://github.com/guthayaswanth0123/Acdyon-job-ingestion-tool](https://github.com/guthayaswanth0123/Acdyon-job-ingestion-tool)  
 
 ---
 
-## 📌 Executive Summary & Purpose
+## 📋 Assessment Context & Solution Philosophy
 
-**Acdyon Ingest** is a production-grade fullstack web application and ingestion pipeline built to solve the **Part 1 Scraper / Ingestion Challenge**. 
+The challenge requires building a production-quality job listing ingestion engine that demonstrates engineering judgment:
 
-Rather than relying on fragile direct HTML scraping from platforms like LinkedIn or Indeed—which violate Terms of Service, risk IP bans, and break whenever CSS classes update—this platform demonstrates an **anti-bot resilient, compliant multi-source ingestion strategy**. It ingests, normalizes, deduplicates, and analyzes job listing data across 3 heterogeneous public sources (**Remotive REST API**, **Arbeitnow REST API**, and **WeWorkRemotely RSS XML Feed**) while providing a dark glassmorphic candidate intelligence dashboard.
+> *"For the live demo, **DO NOT scrape LinkedIn, Indeed, Naukri, Wellfound, or any other website in a way that violates its Terms of Service or risks an account/IP ban.** The live demo should show the complete ingestion flow working end-to-end."*
+
+### Why Multi-Source Public Ingestion over Fragile Direct Scraping?
+1. **Zero Terms of Service Violations & Zero Account/IP Bans**: Direct headless scraping against protected portals triggers Cloudflare/Akamai anti-bot defenses, TLS fingerprinting blocks, and IP bans. Consuming official public REST APIs and RSS feeds guarantees legal compliance and 100% uptime.
+2. **Multi-Format Ingestion Engine**: Ingests data across both **REST JSON APIs** (Remotive, Arbeitnow) and **RSS 2.0 XML Feeds** (WeWorkRemotely) using polymorphic adapter classes (`JobSource`).
+3. **DOM Selector Immunity**: Public feed endpoints provide stable structured contracts that never break when target website frontend layouts change.
+
+---
+
+## 🏗️ System Architecture & Data Pipeline
+
+```text
+┌────────────────────────────┐
+│ Remotive API (REST JSON)   │ ──┐
+├────────────────────────────┤   │     ┌─────────────────────┐     ┌──────────────────────┐     ┌──────────────┐
+│ Arbeitnow API (REST JSON)  │ ──┼───► │ JobSource Adapters  │ ──► │ Ingestion Pipeline   │ ──► │ SQLite DB    │
+├────────────────────────────┤   │     │ (Timeouts & Retries)│     │ (SHA256 Deduplication)│     │ (jobs, runs) │
+│ WeWorkRemotely (RSS XML)   │ ──┘     └─────────────────────┘     └──────────────────────┘     └──────┬───────┘
+└────────────────────────────┘                                                                         │
+                                                                                                       ▼
+    ┌──────────────────────────────┐                   ┌──────────────────────────────┐         ┌──────┴───────┐
+    │ React Saved Shortlist Drawer │ ◄──────────────── │ Visual Analytics Suite       │ ◄────── │ FastAPI      │
+    │ (CSV & JSON Exporter)        │                   │ (Tech Stack Demand Charts)   │         │ REST API     │
+    └──────────────────────────────┘                   └──────────────────────────────┘         └──────────────┘
+```
 
 ---
 
@@ -92,30 +116,22 @@ Acdyon-job-ingestion-tool/
 
 ---
 
-## 🌟 Key Platform Capabilities & Architecture
+## ✨ Standout Features & System Highlights
 
-### 1. Multi-Format Ingestion Engine (3 Sources)
-The platform ingests from 3 distinct public feeds, demonstrating multi-format handling:
-- **Remotive API** (REST JSON): Remote software development listings.
-- **Arbeitnow API** (REST JSON): European & global technology job board.
-- **WeWorkRemotely RSS Feed** (XML): Fullstack programming RSS 2.0 XML feed parsed using Python's `xml.etree.ElementTree`.
-
-### 2. Pipeline Resilience & Anomaly Protection
-- **Deterministic SHA256 Deduplication**: Every record ID is generated via `SHA256(source + url)`. Re-running ingestion updates modified content without inserting duplicate records.
-- **HTTP Timeouts & Exponential Backoff**: Outbound feed requests enforce a 12-second HTTP connection timeout. Transient 5xx or network failures retry up to 3 times with exponential backoff (`1.5^attempt` seconds).
-- **Non-Destructive Zero-Record Protection**: If an upstream feed returns 0 records due to provider maintenance, **the existing database is never wiped**. The pipeline logs an anomaly and retains all existing records.
-
-### 3. Automated Tech Stack Tag Extractor
-A dynamic regex keyword parser parses job titles and descriptions to identify top tech keywords (`Python`, `React`, `TypeScript`, `AWS`, `FastAPI`, `Docker`, `SQL`, `AI/ML`, `Go`, `Kubernetes`) and renders interactive tag pills on job cards.
-
-### 4. Interactive Market Analytics Suite
-Renders real-time demand graphs for tech stack keywords, top hiring organizations, source distribution percentages, and location trends.
-
-### 5. Candidate Shortlist & Dataset Exporter (CSV / JSON)
-Candidates can bookmark target roles to a persistent shortlist (`localStorage`) and export their shortlist to **CSV** or **JSON** dataset files with one click.
-
-### 6. Role Video Guide & Modal Typography
-The job detail modal includes a **Role Video Guide** tab with embedded career reference videos (showing workflows for Developers, Designers, Data Analysts, Product Managers, Sales, and Finance) alongside unescaped rich HTML formatting.
+1. **Multi-Format Ingestion Engine (3 Sources)**:
+   - Ingests from **Remotive REST API** (JSON), **Arbeitnow REST API** (JSON), and **WeWorkRemotely RSS** (XML Feed), demonstrating multi-format feed ingestion.
+2. **Automated Tech Stack Tag Extraction**:
+   - Dynamic regex parser extracts skill keywords (`Python`, `React`, `TypeScript`, `AWS`, `FastAPI`, `Docker`, `SQL`, `AI/ML`, `Go`) from job content and displays interactive tag pills on job cards.
+3. **Interactive Market Analytics Suite**:
+   - Visual charts graphing tech stack demand distributions, top hiring organizations, source distribution percentages, and location trends.
+4. **Candidate Shortlist & Dataset Exporter (CSV / JSON)**:
+   - Candidates can bookmark roles to a persistent shortlist (`localStorage`) and export their shortlist to **CSV** or **JSON** dataset files with one click.
+5. **Deterministic Deduplication & Pipeline Resilience**:
+   - Record ID generation via `SHA256(source + url)`. HTTP 12s connection timeouts, 3-attempt exponential backoff retries, and non-destructive zero-record protection (existing database is retained if an external feed returns 0 items).
+6. **Role Video Guide & Unescaped Modal Typography**:
+   - Job detail modal includes a **Role Video Guide** tab with embedded career reference videos (showing workflows for Developers, Designers, Data Analysts, Product Managers, Sales, and Finance) alongside unescaped rich HTML formatting.
+7. **Polished Glassmorphism Dashboard**:
+   - Dark mode slate theme, tabbed navigation, live search, location/source filters, responsive modal detail view, and Konami Code Easter Egg (`↑ ↑ ↓ ↓ ← → ← → B A`).
 
 ---
 
@@ -205,7 +221,7 @@ The optimized production bundle will be generated inside `frontend/dist/`.
 
 ---
 
-## 📡 REST API Documentation
+## 📡 REST API Reference
 
 | Method | Endpoint | Description | Query Parameters |
 | :--- | :--- | :--- | :--- |
@@ -225,9 +241,11 @@ The optimized production bundle will be generated inside `frontend/dist/`.
 
 ---
 
-## 🧑‍💻 Author Information
+## 🧑‍💻 Author & Submission Information
 
 **Developer**: Gutha Yaswanth  
-**GitHub**: [https://github.com/guthayaswanth0123](https://github.com/guthayaswanth0123)  
+**GitHub Profile**: [https://github.com/guthayaswanth0123](https://github.com/guthayaswanth0123)  
 **Repository**: [https://github.com/guthayaswanth0123/Acdyon-job-ingestion-tool](https://github.com/guthayaswanth0123/Acdyon-job-ingestion-tool)  
+**Live Frontend**: [https://acdyon-job-ingestion-tool.vercel.app](https://acdyon-job-ingestion-tool.vercel.app)  
+**Live Backend API**: [https://acdyon-job-ingestion-tool.onrender.com](https://acdyon-job-ingestion-tool.onrender.com)  
 **Built For**: Acdyon Technologies Engineering Challenge (Part 1 Scraper / Ingestion Project)
