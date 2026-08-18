@@ -1,13 +1,15 @@
 # Engineering Decisions & Detection Analysis (DECISIONS.md)
 
-**Assessment Target**: Acdyon Technologies Frontend & Engineering Challenge — Part 1  
-**Project**: Multi-Source Job Ingestion Engine & Market Intelligence Platform  
+**Candidate & Author**: Gutha Yaswanth (`guthayaswanth0123`)  
+**Assessment Target**: Acdyon Technologies Frontend & Engineering Challenge — **Part 1 (Scraper / Job Ingestion Project)**  
+**Live Frontend**: [https://acdyon-job-ingestion-tool.vercel.app](https://acdyon-job-ingestion-tool.vercel.app)  
+**Live Backend API**: [https://acdyon-job-ingestion-tool.onrender.com](https://acdyon-job-ingestion-tool.onrender.com)  
 
 ---
 
 ## 1. Detection Surface & Scraper Evasion Analysis
 
-Automated web scrapers attempting to extract listings directly from anti-bot protected platforms (such as LinkedIn, Indeed, or Wellfound) trigger security blocks across four explicit detection layers:
+Automated web scrapers attempting to extract listings directly from anti-bot protected portals (such as LinkedIn, Indeed, or Wellfound) trigger security blocks across four explicit telemetry layers:
 
 1. **TLS / HTTP Client Fingerprinting**: Headless automation browsers (Puppeteer, Playwright, Selenium) and naive HTTP clients exhibit distinct TLS ciphers, ALPN negotiation parameters, and missing standard headers (`Accept-Language`, `Sec-Fetch-Mode`, `Sec-Ch-Ua`).
 2. **Behavioral Telemetry & Timing Dynamics**: Rapid sequential requests with sub-100ms delays, non-human mouse movement vectors, or unrendered canvas elements immediately trigger anti-bot edge protection (Cloudflare, Akamai, Datadome).
@@ -19,16 +21,38 @@ To build a production-quality, long-term ingestion platform that avoids illegal 
 
 ---
 
-## 2. Multi-Format Feed Heterogeneity & Ingestion Design
+## 2. Multi-Format Feed Architecture & Pipeline Flow
 
-```text
-[ Remotive REST API (JSON) ] ──┐
-[ Arbeitnow REST API (JSON) ] ├──► [ JobSource Adapters ] ──► [ Ingestion Pipeline ] ──► [ SQLite Database ]
-[ WeWorkRemotely (RSS XML)  ] ──┘   (Timeouts & Retries)       (SHA256 Deduplication)     (jobs, ingestion_runs)
+```mermaid
+flowchart LR
+    subgraph Multi-Format Data Feeds
+        F1["Remotive API (JSON)"]
+        F2["Arbeitnow API (JSON)"]
+        F3["WeWorkRemotely (RSS XML)"]
+    end
+
+    subgraph Resilience & Adapter Layer
+        HTTP["HTTPX Client (12s Timeout)"]
+        RETRY["Exponential Backoff (1.5^n)"]
+        ADP["Polymorphic JobSource Adapters"]
+        SAN["HTML Entity & DOM Sanitizer"]
+    end
+
+    subgraph Ingestion & Storage Pipeline
+        HASH["SHA256 Key Generator"]
+        DEDUP["Deduplication Engine"]
+        ANOMALY["Non-Destructive Zero-Record Protection"]
+        DB[("SQLite DB (jobs.db)")]
+    end
+
+    subgraph Client & Analytics Dashboard
+        TAG["Tech Stack Keyword Extractor"]
+        ANA["Market Intelligence Suite"]
+        EXP["CSV / JSON Dataset Exporter"]
+    end
+
+    F1 & F2 & F3 --> HTTP --> RETRY --> ADP --> SAN --> HASH --> DEDUP --> ANOMALY --> DB --> TAG & ANA & EXP
 ```
-
-- **Polymorphic Source Adapters**: We define an abstract `JobSource` base class requiring `fetch_raw_jobs()` and `normalize_job()`.
-- **Multi-Format Support**: `RemotiveSource` and `ArbeitnowSource` parse JSON payloads, while `WeworkremotelySource` parses RSS 2.0 XML feeds using `xml.etree.ElementTree`. All sources output a standardized dictionary schema.
 
 ---
 

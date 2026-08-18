@@ -28,22 +28,116 @@ The challenge requires building a production-quality job listing ingestion engin
 
 ---
 
-## 🏗️ System Architecture & Data Pipeline
+## 🏗️ End-to-End System Architecture & Data Pipeline
+
+```mermaid
+flowchart TD
+    subgraph Data Sources Layer
+        S1["Remotive API<br/>(REST JSON)"]
+        S2["Arbeitnow API<br/>(REST JSON)"]
+        S3["WeWorkRemotely Feed<br/>(RSS 2.0 XML)"]
+    end
+
+    subgraph Network Resilience Layer
+        N1["HTTPX Async Client"]
+        N2["12s Timeout Enforcement"]
+        N3["Exponential Backoff Retries<br/>(1.5^attempt seconds)"]
+    end
+
+    subgraph Ingestion & Normalization Layer
+        A1["RemotiveSource Adapter"]
+        A2["ArbeitnowSource Adapter"]
+        A3["WeworkremotelySource Adapter"]
+        H1["SHA256 Deterministic Hasher<br/>SHA256(source + url)"]
+        HTML["DOM & Entity Sanitizer"]
+    end
+
+    subgraph Pipeline Processing Engine
+        P1["IngestionPipeline Runner"]
+        P2["Deduplication Engine"]
+        P3["Non-Destructive Zero-Record Protection"]
+        P4["Telemetry Metrics Tracker<br/>(IngestionRun Table)"]
+    end
+
+    subgraph Database Persistence
+        DB[("SQLite Database<br/>jobs.db")]
+        T1["jobs Table"]
+        T2["ingestion_runs Table"]
+    end
+
+    subgraph Service & Analytics Engine
+        SVC["JobService Layer"]
+        TAG["Tech Stack Keyword Extractor<br/>(Python, React, AWS, Docker, AI/ML)"]
+        ANA["Analytics Aggregator"]
+    end
+
+    subgraph Presentation & Client Layer
+        R1["Jobs Board Tab"]
+        R2["Visual Analytics Suite Tab"]
+        R3["Saved Shortlist Drawer Tab<br/>(CSV & JSON Dataset Export)"]
+        R4["Detail Modal + Role Video Guides"]
+    end
+
+    S1 --> N1
+    S2 --> N1
+    S3 --> N1
+
+    N1 --> N2 --> N3
+
+    N3 --> A1
+    N3 --> A2
+    N3 --> A3
+
+    A1 --> H1 & HTML
+    A2 --> H1 & HTML
+    A3 --> H1 & HTML
+
+    H1 & HTML --> P1
+    P1 --> P2 --> P3 --> P4
+
+    P4 --> DB
+    DB --- T1
+    DB --- T2
+
+    DB --> SVC
+    SVC --> TAG
+    SVC --> ANA
+
+    TAG & ANA --> R1 & R2 & R3 & R4
+```
+
+### Stage-by-Stage Technical Pipeline Breakdown
 
 ```text
-┌────────────────────────────┐
-│ Remotive API (REST JSON)   │ ──┐
-├────────────────────────────┤   │     ┌─────────────────────┐     ┌──────────────────────┐     ┌──────────────┐
-│ Arbeitnow API (REST JSON)  │ ──┼───► │ JobSource Adapters  │ ──► │ Ingestion Pipeline   │ ──► │ SQLite DB    │
-├────────────────────────────┤   │     │ (Timeouts & Retries)│     │ (SHA256 Deduplication)│     │ (jobs, runs) │
-│ WeWorkRemotely (RSS XML)   │ ──┘     └─────────────────────┘     └──────────────────────┘     └──────┬───────┘
-└────────────────────────────┘                                                                         │
-                                                                                                       ▼
-    ┌──────────────────────────────┐                   ┌──────────────────────────────┐         ┌──────┴───────┐
-    │ React Saved Shortlist Drawer │ ◄──────────────── │ Visual Analytics Suite       │ ◄────── │ FastAPI      │
-    │ (CSV & JSON Exporter)        │                   │ (Tech Stack Demand Charts)   │         │ REST API     │
-    └──────────────────────────────┘                   └──────────────────────────────┘         └──────────────┘
+[ HETEROGENEOUS FEEDS ] ──► [ NETWORK RESILIENCE ] ──► [ ADAPTER NORMALIZATION ] ──► [ DEDUPLICATION & METRICS ] ──► [ DB PERSISTENCE ] ──► [ INTELLIGENCE DASHBOARD ]
 ```
+
+1. **Stage 1: Multi-Format Feed Fetching**:
+   - Outbound HTTP clients asynchronously query **Remotive REST API** (JSON), **Arbeitnow REST API** (JSON), and **WeWorkRemotely RSS** (XML Feed).
+   - Feeds operate independently; a failure in one provider never stops ingestion from remaining feeds.
+
+2. **Stage 2: Network & Transport Resilience**:
+   - Enforces strict 12-second connection/read timeouts using `httpx`.
+   - On transient 5xx server or network errors, executes up to 3 retries using exponential backoff delay calculation (`1.5^attempt` seconds).
+
+3. **Stage 3: Normalization, Unescaping & Deterministic Hashing**:
+   - Polymorphic adapters map raw JSON/XML nodes into a unified `JobSchema`.
+   - HTML entities (`&lt;div&gt;`, `&amp;`, `&nbsp;`) are unescaped at the ingestion layer using Python's `html.unescape`.
+   - A 64-character SHA256 hash key is generated via `SHA256(f"{source}:{url}")`, producing deterministic record IDs (`remotive_a1b2...`, `arbeitnow_c3d4...`, `weworkremotely_e5f6...`).
+
+4. **Stage 4: Pipeline Deduplication & Anomaly Safety**:
+   - `IngestionPipeline` queries SQLite for existing SHA256 keys. If a job exists, content is updated without duplicates. If new, it is inserted into `jobs`.
+   - **Non-Destructive Zero-Record Protection**: If an upstream feed returns 0 items due to provider outage, existing database records are **never wiped**. The pipeline logs an anomaly and sets run status to `partial_success`.
+   - Execution telemetry (fetched count, inserted count, updated count, duplicates ignored, duration) is recorded in `ingestion_runs`.
+
+5. **Stage 5: Service Layer & Skill Extraction**:
+   - `JobService` handles search filtering across titles, companies, locations, and categories.
+   - **Tech Stack Tag Extractor**: Scans combined title and description text using regex word boundary matching (`\b<keyword>\b`) to extract top skills (`Python`, `React`, `TypeScript`, `AWS`, `FastAPI`, `Docker`, `SQL`, `AI/ML`, `Go`) rendered as tag pills.
+
+6. **Stage 6: Client Dashboard & Dataset Export**:
+   - React 18 + Vite + TypeScript dashboard renders tabbed navigation (**Jobs Board**, **Visual Analytics Suite**, **Saved Shortlist**).
+   - Shortlist drawer allows candidates to save target listings (`localStorage`) and export dataset files to **CSV** or **JSON**.
+   - Job detail modal decodes HTML DOM entities and embeds role-specific YouTube career guidance reference videos.
 
 ---
 
