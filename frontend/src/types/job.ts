@@ -11,6 +11,7 @@ export interface Job {
   published_at?: string | null;
   created_at: string;
   updated_at: string;
+  tags?: string[];
 }
 
 export interface JobListResponse {
@@ -47,6 +48,14 @@ export interface StatsResponse {
     duplicates: number;
     completed_at?: string;
   } | null;
+}
+
+export interface AnalyticsResponse {
+  total_jobs: number;
+  tech_stack_distribution: Record<string, number>;
+  sources_distribution: Record<string, number>;
+  top_hiring_companies: Record<string, number>;
+  locations_distribution: Record<string, number>;
 }
 
 export interface JobFilters {

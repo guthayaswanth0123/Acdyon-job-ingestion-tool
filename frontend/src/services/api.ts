@@ -1,4 +1,4 @@
-import { Job, JobListResponse, IngestionResult, StatsResponse, JobFilters } from '../types/job';
+import { Job, JobListResponse, IngestionResult, StatsResponse, JobFilters, AnalyticsResponse } from '../types/job';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -43,6 +43,14 @@ export async function fetchStats(): Promise<StatsResponse> {
   const response = await fetch(`${API_BASE_URL}/stats`);
   if (!response.ok) {
     throw new Error(`Failed to fetch platform metrics: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchAnalytics(): Promise<AnalyticsResponse> {
+  const response = await fetch(`${API_BASE_URL}/analytics`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch analytics data: ${response.status}`);
   }
   return response.json();
 }

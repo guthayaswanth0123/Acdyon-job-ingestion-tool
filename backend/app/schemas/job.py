@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel, Field
 
 class JobBase(BaseModel):
@@ -17,6 +17,7 @@ class JobSchema(JobBase):
     id: str
     created_at: datetime
     updated_at: datetime
+    tags: List[str] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
@@ -41,10 +42,17 @@ class IngestionResult(BaseModel):
 
 class StatsResponse(BaseModel):
     total_jobs: int
-    sources_count: dict
-    top_locations: dict
-    categories_count: dict
+    sources_count: Dict[str, int]
+    top_locations: Dict[str, int]
+    categories_count: Dict[str, int]
     last_ingestion: Optional[dict] = None
+
+class AnalyticsResponse(BaseModel):
+    total_jobs: int
+    tech_stack_distribution: Dict[str, int]
+    sources_distribution: Dict[str, int]
+    top_hiring_companies: Dict[str, int]
+    locations_distribution: Dict[str, int]
 
 class HealthResponse(BaseModel):
     status: str

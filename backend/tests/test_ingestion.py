@@ -7,9 +7,9 @@ from app.database.connection import Base
 from app.database.models import Job, IngestionRun
 from app.ingestion.remotive import RemotiveSource
 from app.ingestion.arbeitnow import ArbeitnowSource
+from app.ingestion.weworkremotely import WeworkremotelySource
 from app.ingestion.pipeline import IngestionPipeline
 
-# Test DB Setup with StaticPool
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
@@ -43,6 +43,23 @@ def test_remotive_normalization():
     assert normalized["source"] == "remotive"
     assert normalized["id"].startswith("remotive_")
 
+def test_weworkremotely_rss_normalization():
+    source = WeworkremotelySource()
+    raw = {
+        "title": "Stripe: Senior React Engineer",
+        "link": "https://weworkremotely.com/jobs/stripe-senior-react-engineer",
+        "description": "Build high throughput web dashboards",
+        "region": "Worldwide",
+        "category": "Full-Stack Programming",
+        "pub_date": "Mon, 17 Aug 2026 19:21:19 +0000"
+    }
+    normalized = source.normalize_job(raw)
+    assert normalized is not None
+    assert normalized["company"] == "Stripe"
+    assert normalized["title"] == "Senior React Engineer"
+    assert normalized["source"] == "weworkremotely"
+    assert normalized["id"].startswith("weworkremotely_")
+
 def test_deterministic_id_consistency():
     source = RemotiveSource()
     url = "https://example.com/jobs/123"
@@ -71,13 +88,11 @@ async def test_pipeline_deduplication_and_metrics():
     mock_source = MockSingleJobSource()
     pipeline = IngestionPipeline(db, mock_source)
 
-    # First run -> 1 inserted
     res1 = await pipeline.run()
     assert res1.inserted == 1
     assert res1.duplicates == 0
     assert db.query(Job).count() == 1
 
-    # Second run with same record -> 0 inserted, 1 duplicate
     res2 = await pipeline.run()
     assert res2.inserted == 0
     assert res2.duplicates == 1
@@ -87,7 +102,6 @@ async def test_pipeline_deduplication_and_metrics():
 @pytest.mark.asyncio
 async def test_pipeline_empty_feed_resilience():
     db = TestingSessionLocal()
-    # First seed 1 job
     db.add(Job(
         id="test_123",
         title="Existing Engineer",
@@ -99,12 +113,10 @@ async def test_pipeline_empty_feed_resilience():
     ))
     db.commit()
 
-    # Run empty source pipeline
     empty_source = MockEmptySource()
     pipeline = IngestionPipeline(db, empty_source)
     res = await pipeline.run()
 
-    # DB should still retain the existing job!
     assert res.fetched == 0
     assert res.status == "partial_success"
     assert db.query(Job).count() == 1
