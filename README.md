@@ -1,4 +1,4 @@
-# Acdyon Ingest — Resilient Job Listing Ingestion Platform & Intelligence Suite
+# Acdyon Ingest — Resilient Multi-Source Job Ingestion & Market Analytics Platform
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18.2-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)
@@ -11,7 +11,7 @@ Production-quality fullstack web application built for **Part 1 (Scraper / Job L
 
 ---
 
-## 🌐 Live Production Demo & Links
+## 🌐 Live Production Demo Links
 
 - **Live Deployed Frontend (Vercel)**: [https://acdyon-job-ingestion-tool.vercel.app](https://acdyon-job-ingestion-tool.vercel.app)
 - **Live Deployed Backend API (Render)**: [https://acdyon-job-ingestion-tool.onrender.com](https://acdyon-job-ingestion-tool.onrender.com)
@@ -19,46 +19,72 @@ Production-quality fullstack web application built for **Part 1 (Scraper / Job L
 
 ---
 
-## 🏗️ Architecture & Multi-Source Data Flow
+## 🏗️ System Architecture & Data Pipeline
 
 ```text
-[ Remotive API (REST JSON) ] ──┐
-[ Arbeitnow API (REST JSON)  ] ├──► [ JobSource Adapters ] ──► [ Ingestion Pipeline ] ──► [ SQLite DB ]
-[ WeWorkRemotely (RSS XML)   ] ──┘   (Timeouts & Retries)       (SHA256 Deduplication)       (jobs, runs)
-                                                                                                 │
-                                                                                                 ▼
-    ┌───────────────────────────┐                      ┌───────────────────────────┐       ┌─────┴─────┐
-    │ React Saved Shortlist Drawer│ ◄────────────────── │ Visual Analytics Suite    │ ◄──── │ FastAPI   │
-    │ (CSV & JSON Export)       │                      │ (Tech Stack Demand Charts)│       │ REST API  │
-    └───────────────────────────┘                      └───────────────────────────┘       └───────────┘
+┌────────────────────────────┐
+│ Remotive API (REST JSON)   │ ──┐
+├────────────────────────────┤   │     ┌─────────────────────┐     ┌──────────────────────┐     ┌──────────────┐
+│ Arbeitnow API (REST JSON)  │ ──┼───► │ JobSource Adapters  │ ──► │ Ingestion Pipeline   │ ──► │ SQLite DB    │
+├────────────────────────────┤   │     │ (Timeouts & Retries)│     │ (SHA256 Deduplication)│     │ (jobs, runs) │
+│ WeWorkRemotely (RSS XML)   │ ──┘     └─────────────────────┘     └──────────────────────┘     └──────┬───────┘
+└────────────────────────────┘                                                                         │
+                                                                                                       ▼
+    ┌──────────────────────────────┐                   ┌──────────────────────────────┐         ┌──────┴───────┐
+    │ React Saved Shortlist Drawer │ ◄──────────────── │ Visual Analytics Suite       │ ◄────── │ FastAPI      │
+    │ (CSV & JSON Exporter)        │                   │ (Tech Stack Demand Charts)   │         │ REST API     │
+    └──────────────────────────────┘                   └──────────────────────────────┘         └──────────────┘
 ```
 
 ---
 
-## ✨ Top-1% Standout Features
+## ✨ Core Key Features
 
-1. **Multi-Format Ingestion Engine (3 Data Sources)**: Ingests from **Remotive REST API**, **Arbeitnow REST API**, and **WeWorkRemotely RSS XML Feed**, demonstrating multi-format feed parsing in a unified pipeline.
-2. **Automated Tech Stack Tag Extraction**: Regex algorithm parses job descriptions and titles to extract tech keywords (`Python`, `React`, `AWS`, `Docker`, `TypeScript`, `FastAPI`, `AI/ML`, `Go`, `Kubernetes`) rendered as interactive tag pills.
-3. **Interactive Visual Analytics Suite**: Renders real-time demand graphs for tech stack keywords, top hiring companies, and source distribution.
-4. **Candidate Shortlisting & Data Exporter**: Users can save target jobs to a persistent shortlist (`localStorage`) and export them directly to **CSV** or **JSON** files for application tracking.
-5. **Deterministic Deduplication**: Key generation via `SHA256(source + url)` prevents duplicate record insertion across ingestions.
-6. **Resilience Safeguards**: 12-second HTTP timeouts, 3-attempt exponential backoff retries, and non-destructive zero-record protections (DB is never wiped if feed returns 0 items).
-7. **Polished Glassmorphism UI**: Dark slate theme, tabbed navigation, live search, location/source filters, mobile responsiveness (390px - 1440px), and bonus Konami Code Easter Egg (`↑ ↑ ↓ ↓ ← → ← → B A`).
-
----
-
-## 🛠️ Technology Stack
-
-- **Backend**: Python 3.10+, FastAPI, SQLAlchemy 2.0 ORM, Pydantic v2, `httpx` (async HTTP client), Pytest (10/10 passing).
-- **Frontend**: React 18, Vite, TypeScript, Tailwind CSS, Lucide Icons.
-- **Database**: SQLite3 (`jobs.db`).
-- **Deployment**: Vercel (Frontend), Render (Backend).
+1. **Multi-Format Feed Ingestion Engine (3 Sources)**:
+   - Ingests from **Remotive REST API** (JSON), **Arbeitnow REST API** (JSON), and **WeWorkRemotely RSS** (XML Feed), demonstrating multi-format feed ingestion without ToS violations or account bans.
+2. **Automated Tech Stack Tag Extraction**:
+   - Dynamic regex parser extracts skill keywords (`Python`, `React`, `TypeScript`, `AWS`, `FastAPI`, `Docker`, `SQL`, `AI/ML`, `Go`) from job descriptions and displays interactive tag pills on job cards.
+3. **Interactive Market Analytics Suite**:
+   - Visual charts graphing tech stack demand distributions, top hiring organizations, and ingestion telemetry.
+4. **Candidate Shortlist & Data Exporter**:
+   - Users can bookmark roles to a persistent shortlist (`localStorage`) and export their shortlist to **CSV** or **JSON** files.
+5. **Deterministic Deduplication & Pipeline Resilience**:
+   - ID generation via `SHA256(source + url)`. HTTP 12s connection timeouts, 3-attempt exponential backoff retries, and non-destructive zero-record protection (existing database is retained if an external feed returns 0 items).
+6. **Polished Glassmorphism Dashboard**:
+   - Dark mode slate theme, tabbed navigation, live search, location/source filters, responsive modal detail view with custom typography, and Konami Code Easter Egg (`↑ ↑ ↓ ↓ ← → ← → B A`).
 
 ---
 
-## 🧪 Running Automated Tests
+## 💻 Local Setup Instructions
 
-Run backend unit and integration test suite (10 tests):
+### Prerequisites
+- Python 3.10+
+- Node.js 18+
+
+### 1. Backend Setup (FastAPI)
+```bash
+cd backend
+python -m venv venv
+.\venv\Scripts\activate      # On Windows
+# source venv/bin/activate  # On macOS/Linux
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+Backend server will run at: `http://localhost:8000` (API Docs at `http://localhost:8000/docs`).
+
+### 2. Frontend Setup (React + Vite)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Frontend dashboard will run at: `http://localhost:5173`.
+
+---
+
+## 🧪 Automated Testing
+
+Run the Pytest suite (10 unit/integration tests):
 ```bash
 cd backend
 .\venv\Scripts\pytest.exe -v
@@ -66,13 +92,13 @@ cd backend
 
 ---
 
-## 📡 API Reference
+## 📡 REST API Reference
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/health` | Service health status and database connectivity. |
-| `GET` | `/api/jobs` | Paginated list of jobs. Supports `search`, `location`, `source`, `category`, `page`, `limit`. |
-| `GET` | `/api/jobs/{id}` | Detailed job record by deterministic ID. |
-| `POST` | `/api/ingest` | Triggers ingestion run for `source=remotive`, `arbeitnow`, `weworkremotely`, or `all`. |
-| `GET` | `/api/stats` | Platform telemetry metrics (job counts, location stats, last run log). |
-| `GET` | `/api/analytics` | Aggregated tech stack distribution, top hiring companies, and source share for visual charts. |
+| `GET` | `/api/health` | Health check status and SQLite database connectivity. |
+| `GET` | `/api/jobs` | Paginated job list. Supports `search`, `location`, `source`, `category`, `page`, `limit`. |
+| `GET` | `/api/jobs/{id}` | Single job listing by deterministic ID. |
+| `POST` | `/api/ingest` | Triggers ingestion for `source=remotive`, `arbeitnow`, `weworkremotely`, or `all`. |
+| `GET` | `/api/stats` | System telemetry metrics (job counts, source counts, last run status). |
+| `GET` | `/api/analytics` | Aggregated market analytics data for tech stack demand and hiring trends. |
