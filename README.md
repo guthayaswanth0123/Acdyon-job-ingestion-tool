@@ -9,7 +9,15 @@
 
 Production-quality fullstack web application built for **Part 1 (Scraper / Job Listing Ingestion Project)** of the **Acdyon Technologies Engineering Challenge**.
 
-The application ingests real-time job listings from public tech job feeds (**Remotive API** and **Arbeitnow API**), normalizes and deduplicates records into an SQLite database via a FastAPI backend, and exposes them through a polished React + TypeScript + Tailwind CSS intelligence dashboard.
+---
+
+## 🌐 Live Production Demo & Links
+
+- **Live Deployed Frontend (Vercel)**: [https://acdyon-job-ingestion-tool.vercel.app](https://acdyon-job-ingestion-tool.vercel.app)
+- **Live Deployed Backend API (Render)**: [https://acdyon-job-ingestion-tool.onrender.com](https://acdyon-job-ingestion-tool.onrender.com)
+- **GitHub Repository**: [https://github.com/guthayaswanth0123/Acdyon-job-ingestion-tool](https://github.com/guthayaswanth0123/Acdyon-job-ingestion-tool)
+
+---
 
 ---
 
