@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Job } from '../types/job';
-import { X, Building2, MapPin, ExternalLink, Calendar, ShieldCheck, Tag, Globe } from 'lucide-react';
+import { X, Building2, MapPin, ExternalLink, Calendar, ShieldCheck, Tag, DollarSign } from 'lucide-react';
 
 interface JobDetailModalProps {
   job: Job | null;
@@ -32,15 +32,33 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, onClose }) 
     }
   };
 
+  // Clean description HTML by stripping repetitive source boilerplate
+  const cleanDescriptionHtml = (rawHtml: string) => {
+    if (!rawHtml) return 'No detailed description provided.';
+    let clean = rawHtml
+      .replace(/Find (more )?.*? Jobs in .*? on Arbeitnow/gi, '')
+      .replace(/Find Jobs in .*? on Arbeitnow/gi, '')
+      .trim();
+    return clean;
+  };
+
+  // Extract potential salary string (e.g. £90,000 - £120,000 or $120k)
+  const extractSalary = (text: string) => {
+    const match = text.match(/([£$€]\s?\d{2,3}[,.]?\d{0,3}\s?[-–—]\s?[£$€]?\s?\d{2,3}[,.]?\d{0,3})/i);
+    return match ? match[0] : null;
+  };
+
+  const detectedSalary = extractSalary(job.description);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-fade-in">
       <div 
         className="glass-panel w-full max-w-3xl max-h-[85vh] rounded-2xl border border-slate-700/80 shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-slate-800 flex items-start justify-between gap-4 bg-slate-900/60">
-          <div>
+        <div className="p-6 border-b border-slate-800 flex items-start justify-between gap-4 bg-slate-900/80">
+          <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-wider">
                 {job.source}
@@ -50,8 +68,14 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, onClose }) 
                   {job.category}
                 </span>
               )}
+              {detectedSalary && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                  <DollarSign className="w-3 h-3" />
+                  {detectedSalary}
+                </span>
+              )}
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">{job.title}</h2>
+            <h2 className="text-xl font-extrabold text-white mb-2">{job.title}</h2>
             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 font-medium">
               <span className="flex items-center gap-1.5">
                 <Building2 className="w-4 h-4 text-indigo-400" />
@@ -77,25 +101,37 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, onClose }) 
         </div>
 
         {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-6 text-sm text-slate-300 leading-relaxed">
-          {/* Metadata banner */}
-          <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs text-slate-400">
+        <div className="p-6 overflow-y-auto space-y-6">
+          {/* Metadata telemetry banner */}
+          <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               <span>Deduplicated Record ID: <code className="text-indigo-300 font-mono">{job.id}</code></span>
             </div>
-            <span className="hidden sm:inline text-slate-400 font-mono text-[11px]">Source: {job.source}</span>
+            <span className="text-slate-400 font-mono text-[11px]">Source: {job.source}</span>
           </div>
 
-          {/* HTML Description Body */}
+          {/* Tech Stack Tags if present */}
+          {job.tags && job.tags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-slate-400">Required Skills:</span>
+              {job.tags.map((tag) => (
+                <span key={tag} className="px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-950/80 text-indigo-300 border border-indigo-500/30">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Custom Styled HTML Description Body */}
           <div 
-            className="prose prose-invert max-w-none prose-p:text-slate-300 prose-headings:text-white prose-a:text-indigo-400 hover:prose-a:text-indigo-300 prose-strong:text-white"
-            dangerouslySetInnerHTML={{ __html: job.description }}
+            className="job-description-content"
+            dangerouslySetInnerHTML={{ __html: cleanDescriptionHtml(job.description) }}
           />
         </div>
 
         {/* Footer */}
-        <div className="p-4 sm:px-6 border-t border-slate-800 bg-slate-900/80 flex items-center justify-between gap-4">
+        <div className="p-4 sm:px-6 border-t border-slate-800 bg-slate-900/90 flex items-center justify-between gap-4">
           <div className="text-xs text-slate-400 font-mono">
             Ingested: {new Date(job.created_at).toLocaleDateString()}
           </div>
