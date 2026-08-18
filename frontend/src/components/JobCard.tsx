@@ -15,10 +15,20 @@ export const JobCard: React.FC<JobCardProps> = ({
   isBookmarked = false,
   onToggleBookmark,
 }) => {
-  const cleanExcerpt = (htmlStr: string) => {
-    const tmp = document.createElement('DIV');
-    tmp.innerHTML = htmlStr;
-    const text = tmp.textContent || tmp.innerText || '';
+  const cleanExcerpt = (rawStr: string) => {
+    if (!rawStr) return 'No description available.';
+    // Strip HTML tags cleanly
+    let text = rawStr.replace(/<[^>]*>?/gm, ' ');
+    // Decode HTML entities
+    text = text
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+    // Normalize spaces
+    text = text.replace(/\s+/g, ' ').trim();
     return text.length > 130 ? text.slice(0, 130) + '...' : text;
   };
 
