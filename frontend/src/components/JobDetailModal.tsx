@@ -47,7 +47,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, onClose }) 
     }
   };
 
-  // Helper to safely format raw description text into rich HTML if plain text
+  // Helper to safely format raw description text into rich HTML
   const cleanAndFormatDescription = (rawStr: string) => {
     if (!rawStr || rawStr.trim() === '') {
       return '<p class="text-slate-400 italic">No detailed description was provided by the source feed for this position.</p>';
@@ -58,7 +58,23 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ job, onClose }) 
       .replace(/Find Jobs in .*? on Arbeitnow/gi, '')
       .trim();
 
-    // Check if the string already contains HTML tags
+    // 1. Decode any escaped HTML entities (&lt;div&gt; -> <div>)
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(cleaned, 'text/html');
+      const textVal = doc.body.textContent || '';
+      
+      // If textContent itself contains HTML elements, it means the raw string had escaped entities (&lt;p&gt;)
+      if (/<[a-z][\s\S]*>/i.test(textVal)) {
+        cleaned = textVal;
+      } else if (doc.body.innerHTML && doc.body.innerHTML.trim() !== '') {
+        cleaned = doc.body.innerHTML;
+      }
+    } catch {
+      // Fallback
+    }
+
+    // 2. Check if string has HTML elements
     const hasHtmlTags = /<[a-z][\s\S]*>/i.test(cleaned);
 
     if (!hasHtmlTags) {
